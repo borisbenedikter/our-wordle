@@ -162,10 +162,9 @@ def display_board(guesses, results, keyboard_status):
 
     display_keyboard(keyboard_status)
 
-
-def get_valid_guess():
+def get_valid_guess(allowed_guesses):
     """
-    Ask the player for a valid five-letter guess.
+    Ask the player for a valid five-letter English word.
     """
 
     while True:
@@ -182,10 +181,29 @@ def get_valid_guess():
             print("Your guess must contain letters only.")
             continue
 
+        if guess not in allowed_guesses:
+            print("Not in word list.")
+            continue
+
         return guess
 
 
-def play_wordle(secret_word):
+def load_word_list(filename):
+    """
+    Load five-letter words from a text file.
+    """
+
+    with open(filename, "r", encoding="utf-8") as file:
+        words = {
+            line.strip().lower()
+            for line in file
+            if len(line.strip()) == WORD_LENGTH
+            and line.strip().isalpha()
+        }
+
+    return words
+
+def play_wordle(secret_word, allowed_guesses, possible_answers):
     """
     Run one complete game.
     """
@@ -195,6 +213,11 @@ def play_wordle(secret_word):
     if len(secret_word) != WORD_LENGTH or not secret_word.isalpha():
         raise ValueError(
             f"The secret word must contain exactly {WORD_LENGTH} letters."
+        )
+
+    if secret_word not in possible_answers:
+        raise ValueError(
+            f"'{secret_word}' is not in the possible-answer list."
         )
 
     # Store game history
@@ -231,7 +254,7 @@ def play_wordle(secret_word):
 
         print(f"Attempt {attempt}/{MAX_ATTEMPTS}")
 
-        guess = get_valid_guess()
+        guess = get_valid_guess(allowed_guesses)
 
         result = evaluate_guess(secret_word, guess)
 
@@ -259,6 +282,17 @@ def play_wordle(secret_word):
 
 if __name__ == "__main__":
 
+    allowed_guesses = load_word_list("allowed_guesses.txt")
+    possible_answers = load_word_list("possible_answers.txt")
+
+    missing_words = possible_answers - allowed_guesses
+
+    if missing_words:
+        raise ValueError(
+            "Some possible answers are not contained in the allowed-guesses list: "
+            + ", ".join(sorted(missing_words))
+        )
+
     secret_word = "plant"
 
-    play_wordle(secret_word)
+    play_wordle(secret_word, allowed_guesses, possible_answers)
