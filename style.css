@@ -1,0 +1,176 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #ffffff;
+  --text: #111111;
+  --border: #d3d6da;
+  --empty: #ffffff;
+  --unused-key: #d3d6da;
+  --gray: #787c7e;
+  --yellow: #c9b458;
+  --green: #6aaa64;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.game {
+  width: min(100%, 520px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 20px 12px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-header {
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 16px;
+}
+
+.game-header h1 {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+}
+
+.game-header p {
+  margin: 0 0 12px;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.message {
+  min-height: 32px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 62px);
+  grid-template-rows: repeat(6, 62px);
+  gap: 6px;
+  margin: 4px 0 28px;
+}
+
+.tile {
+  width: 62px;
+  height: 62px;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--empty);
+  font-size: 2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.tile.filled {
+  border-color: #878a8c;
+}
+
+.tile.green,
+.key.green {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.tile.yellow,
+.key.yellow {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #fff;
+}
+
+.tile.gray,
+.key.gray {
+  background: var(--gray);
+  border-color: var(--gray);
+  color: #fff;
+}
+
+.keyboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.key {
+  height: 58px;
+  min-width: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--unused-key);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.key.wide {
+  min-width: 64px;
+  font-size: 0.75rem;
+}
+
+.key:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 420px) {
+  .game {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .board {
+    grid-template-columns: repeat(5, 54px);
+    grid-template-rows: repeat(6, 54px);
+    gap: 5px;
+  }
+
+  .tile {
+    width: 54px;
+    height: 54px;
+    font-size: 1.7rem;
+  }
+
+  .keyboard-row {
+    gap: 4px;
+  }
+
+  .key {
+    min-width: 0;
+    flex: 1;
+    padding: 0 5px;
+    height: 54px;
+  }
+
+  .key.wide {
+    flex: 1.5;
+  }
+}
