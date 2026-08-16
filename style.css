@@ -5,12 +5,14 @@
 :root {
   --bg: #ffffff;
   --text: #111111;
+  --muted: #555555;
   --border: #d3d6da;
   --empty: #ffffff;
   --unused-key: #d3d6da;
   --gray: #787c7e;
   --yellow: #c9b458;
   --green: #6aaa64;
+  --panel: #f7f7f7;
 }
 
 body {
@@ -22,7 +24,7 @@ body {
 }
 
 .game {
-  width: min(100%, 520px);
+  width: min(100%, 560px);
   min-height: 100vh;
   margin: 0 auto;
   padding: 20px 12px 24px;
@@ -35,7 +37,8 @@ body {
   width: 100%;
   text-align: center;
   border-bottom: 1px solid #e5e5e5;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
 }
 
 .game-header h1 {
@@ -46,8 +49,119 @@ body {
 
 .game-header p {
   margin: 0 0 12px;
-  color: #555;
+  color: var(--muted);
   font-size: 0.95rem;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.primary-button,
+.secondary-button {
+  border-radius: 6px;
+  padding: 9px 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button {
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+}
+
+.secondary-button {
+  border: 1px solid #b8b8b8;
+  background: #fff;
+  color: #111;
+}
+
+.primary-button:active,
+.secondary-button:active {
+  transform: scale(0.98);
+}
+
+.challenge-panel {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid #e1e1e1;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.challenge-panel h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.challenge-panel p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.35;
+  font-size: 0.9rem;
+}
+
+.challenge-input-row,
+.share-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.challenge-input-row input,
+.share-link-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #b8b8b8;
+  border-radius: 6px;
+  background: #fff;
+  padding: 9px 10px;
+}
+
+#challenge-word {
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.challenge-error {
+  min-height: 20px;
+  margin-top: 6px;
+  color: #a40000;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.share-area {
+  margin-top: 10px;
+}
+
+.share-area label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.copy-status {
+  min-height: 18px;
+  margin-top: 5px;
+  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.hidden {
+  display: none;
 }
 
 .message {
@@ -139,6 +253,13 @@ body {
 
 .key:active {
   transform: scale(0.97);
+}
+
+@media (max-width: 480px) {
+  .challenge-input-row,
+  .share-link-row {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 420px) {

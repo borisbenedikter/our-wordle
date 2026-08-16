@@ -3,17 +3,33 @@ const MAX_ATTEMPTS = 6;
 
 let allowedGuesses = new Set();
 let possibleAnswers = [];
+let possibleAnswersSet = new Set();
+
 let secretWord = "";
+let challengeMode = false;
 
 let currentRow = 0;
 let currentGuess = "";
 let gameOver = false;
 
+const keyboardStatus = {};
+
 const board = document.getElementById("board");
 const keyboard = document.getElementById("keyboard");
 const message = document.getElementById("message");
+const subtitle = document.getElementById("subtitle");
 
-const keyboardStatus = {};
+const newGameButton = document.getElementById("new-game-button");
+const createChallengeButton = document.getElementById("create-challenge-button");
+const challengePanel = document.getElementById("challenge-panel");
+const challengeWordInput = document.getElementById("challenge-word");
+const generateLinkButton = document.getElementById("generate-link-button");
+const challengeError = document.getElementById("challenge-error");
+const shareArea = document.getElementById("share-area");
+const challengeLinkInput = document.getElementById("challenge-link");
+const copyLinkButton = document.getElementById("copy-link-button");
+const copyStatus = document.getElementById("copy-status");
+
 const statusPriority = {
   gray: 1,
   yellow: 2,
@@ -52,7 +68,9 @@ async function initializeGame() {
     const answers = await loadWordList("possible_answers.txt");
 
     allowedGuesses = new Set(allowed);
+
     possibleAnswers = answers.filter(word => allowedGuesses.has(word));
+    possibleAnswersSet = new Set(possibleAnswers);
 
     if (possibleAnswers.length === 0) {
       throw new Error(
@@ -60,16 +78,19 @@ async function initializeGame() {
       );
     }
 
-    secretWord =
-      possibleAnswers[
-        Math.floor(Math.random() * possibleAnswers.length)
-      ];
-
     createBoard();
     createKeyboard();
 
-    // Uncomment this while debugging if you want to see the answer:
-    // console.log("Secret word:", secretWord);
+    const challengeWord = getChallengeWordFromURL();
+
+    if (challengeWord && possibleAnswersSet.has(challengeWord)) {
+      startGame(challengeWord, true);
+    } else {
+      if (challengeWord) {
+        removeChallengeFromURL();
+      }
+      startRandomGame();
+    }
 
   } catch (error) {
     showMessage(
@@ -122,6 +143,63 @@ function createKeyboard() {
     }
 
     keyboard.appendChild(rowElement);
+  }
+}
+
+
+function startGame(word, isChallenge) {
+  secretWord = word;
+  challengeMode = isChallenge;
+
+  currentRow = 0;
+  currentGuess = "";
+  gameOver = false;
+
+  for (const letter of Object.keys(keyboardStatus)) {
+    delete keyboardStatus[letter];
+  }
+
+  resetBoardDisplay();
+  resetKeyboardDisplay();
+  clearMessage();
+  closeChallengePanel();
+
+  subtitle.textContent = challengeMode
+    ? "Someone chose this word especially for you."
+    : "Guess the five-letter word in six tries.";
+
+  // Helpful during development:
+  // console.log("Secret word:", secretWord);
+}
+
+
+function startRandomGame() {
+  removeChallengeFromURL();
+
+  const randomWord =
+    possibleAnswers[
+      Math.floor(Math.random() * possibleAnswers.length)
+    ];
+
+  startGame(randomWord, false);
+}
+
+
+function resetBoardDisplay() {
+  const tiles = document.querySelectorAll(".tile");
+
+  for (const tile of tiles) {
+    tile.textContent = "";
+    tile.className = "tile";
+  }
+}
+
+
+function resetKeyboardDisplay() {
+  const keys = document.querySelectorAll(".key");
+
+  for (const key of keys) {
+    key.classList.remove("gray", "yellow", "green");
   }
 }
 
@@ -300,8 +378,156 @@ function clearMessage() {
 }
 
 
+function toggleChallengePanel() {
+  const isHidden = challengePanel.classList.contains("hidden");
+
+  if (isHidden) {
+    challengePanel.classList.remove("hidden");
+    challengeWordInput.value = "";
+    challengeError.textContent = "";
+    shareArea.classList.add("hidden");
+    copyStatus.textContent = "";
+    challengeWordInput.focus();
+  } else {
+    closeChallengePanel();
+  }
+}
+
+
+function closeChallengePanel() {
+  challengePanel.classList.add("hidden");
+}
+
+
+function generateChallengeLink() {
+  const word = challengeWordInput.value.trim().toLowerCase();
+
+  challengeError.textContent = "";
+  copyStatus.textContent = "";
+  shareArea.classList.add("hidden");
+
+  if (word.length !== WORD_LENGTH || !/^[a-z]+$/.test(word)) {
+    challengeError.textContent = "Enter exactly five letters.";
+    return;
+  }
+
+  if (!possibleAnswersSet.has(word)) {
+    challengeError.textContent =
+      "That word is not in the possible-answer list.";
+    return;
+  }
+
+  const encodedWord = encodeChallengeWord(word);
+
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("c", encodedWord);
+
+  challengeLinkInput.value = url.toString();
+  shareArea.classList.remove("hidden");
+}
+
+
+function encodeChallengeWord(word) {
+  // This hides the word from casual inspection, but it is NOT encryption.
+  // That is acceptable for a static GitHub Pages version.
+  return btoa(word)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+
+function decodeChallengeWord(encoded) {
+  try {
+    const base64 = encoded
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+
+    return atob(base64 + padding).toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+
+function getChallengeWordFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get("c");
+
+  if (!encoded) {
+    return null;
+  }
+
+  const decoded = decodeChallengeWord(encoded);
+
+  if (
+    !decoded ||
+    decoded.length !== WORD_LENGTH ||
+    !/^[a-z]+$/.test(decoded)
+  ) {
+    return null;
+  }
+
+  return decoded;
+}
+
+
+function removeChallengeFromURL() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("c");
+  history.replaceState({}, "", url.pathname + url.search + url.hash);
+}
+
+
+async function copyChallengeLink() {
+  const text = challengeLinkInput.value;
+
+  if (!text) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    copyStatus.textContent = "Copied!";
+  } catch {
+    challengeLinkInput.select();
+    document.execCommand("copy");
+    copyStatus.textContent = "Copied!";
+  }
+}
+
+
+newGameButton.addEventListener("click", startRandomGame);
+createChallengeButton.addEventListener("click", toggleChallengePanel);
+generateLinkButton.addEventListener("click", generateChallengeLink);
+copyLinkButton.addEventListener("click", copyChallengeLink);
+
+challengeWordInput.addEventListener("input", () => {
+  challengeWordInput.value =
+    challengeWordInput.value.replace(/[^a-zA-Z]/g, "").slice(0, 5);
+});
+
+challengeWordInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    generateChallengeLink();
+  }
+
+  // Prevent challenge-panel typing from also entering letters in the game.
+  event.stopPropagation();
+});
+
 document.addEventListener("keydown", event => {
   if (gameOver || !secretWord) {
+    return;
+  }
+
+  // Do not control the game while typing into an input box.
+  if (event.target.tagName === "INPUT") {
     return;
   }
 

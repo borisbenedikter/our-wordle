@@ -10,8 +10,53 @@
   <main class="game">
     <header class="game-header">
       <h1>WORD GAME</h1>
-      <p>Guess the five-letter word in six tries.</p>
+      <p id="subtitle">Guess the five-letter word in six tries.</p>
+
+      <div class="header-actions">
+        <button id="new-game-button" class="secondary-button">
+          New Random Game
+        </button>
+        <button id="create-challenge-button" class="primary-button">
+          Create a Challenge
+        </button>
+      </div>
     </header>
+
+    <section id="challenge-panel" class="challenge-panel hidden">
+      <h2>Create a challenge</h2>
+      <p>
+        Choose a five-letter word from the possible-answer list.
+        The generated link will open directly to your puzzle.
+      </p>
+
+      <div class="challenge-input-row">
+        <input
+          id="challenge-word"
+          type="text"
+          maxlength="5"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="PLANT"
+          aria-label="Secret challenge word"
+        />
+        <button id="generate-link-button" class="primary-button">
+          Generate Link
+        </button>
+      </div>
+
+      <div id="challenge-error" class="challenge-error" aria-live="polite"></div>
+
+      <div id="share-area" class="share-area hidden">
+        <label for="challenge-link">Share this link:</label>
+        <div class="share-link-row">
+          <input id="challenge-link" type="text" readonly />
+          <button id="copy-link-button" class="secondary-button">
+            Copy
+          </button>
+        </div>
+        <div id="copy-status" class="copy-status" aria-live="polite"></div>
+      </div>
+    </section>
 
     <div id="message" class="message" aria-live="polite"></div>
 
