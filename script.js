@@ -22,6 +22,7 @@ const subtitle = document.getElementById("subtitle");
 const newGameButton = document.getElementById("new-game-button");
 const createChallengeButton = document.getElementById("create-challenge-button");
 const challengePanel = document.getElementById("challenge-panel");
+const challengeNameInput = document.getElementById("challenge-name");
 const challengeWordInput = document.getElementById("challenge-word");
 const generateLinkButton = document.getElementById("generate-link-button");
 const challengeError = document.getElementById("challenge-error");
@@ -82,9 +83,10 @@ async function initializeGame() {
     createKeyboard();
 
     const challengeWord = getChallengeWordFromURL();
+    const challengeCreator = getChallengeCreatorFromURL();
 
     if (challengeWord && possibleAnswersSet.has(challengeWord)) {
-      startGame(challengeWord, true);
+      startGame(challengeWord, true, challengeCreator);
     } else {
       if (challengeWord) {
         removeChallengeFromURL();
@@ -147,7 +149,8 @@ function createKeyboard() {
 }
 
 
-function startGame(word, isChallenge) {
+
+function startGame(word, isChallenge, creator = null) {
   secretWord = word;
   challengeMode = isChallenge;
 
@@ -164,10 +167,14 @@ function startGame(word, isChallenge) {
   clearMessage();
   closeChallengePanel();
 
-  subtitle.textContent = challengeMode
-    ? "Someone chose this word especially for you."
-    : "Guess the five-letter word in six tries.";
-
+  if (challengeMode) {
+    subtitle.textContent = creator
+      ? `${creator} chose a word for you.`
+      : "Someone chose a word for you.";
+  } else {
+    subtitle.textContent =
+      "Guess the five-letter word in six tries.";
+  }
   // Helpful during development:
   // console.log("Secret word:", secretWord);
 }
@@ -379,6 +386,13 @@ function clearMessage() {
 
 
 function toggleChallengePanel() {
+  const savedName =
+    localStorage.getItem("challengeCreatorName");
+
+  if (savedName) {
+    challengeNameInput.value = savedName;
+  }
+
   const isHidden = challengePanel.classList.contains("hidden");
 
   if (isHidden) {
@@ -400,6 +414,10 @@ function closeChallengePanel() {
 
 
 function generateChallengeLink() {
+  const name = challengeNameInput.value.trim();
+  if (name) {
+    localStorage.setItem("challengeCreatorName", name);
+  }
   const word = challengeWordInput.value.trim().toLowerCase();
 
   challengeError.textContent = "";
@@ -423,6 +441,9 @@ function generateChallengeLink() {
   url.search = "";
   url.hash = "";
   url.searchParams.set("c", encodedWord);
+  if (name) {
+    url.searchParams.set("from", name);
+  }
 
   challengeLinkInput.value = url.toString();
   shareArea.classList.remove("hidden");
@@ -476,9 +497,23 @@ function getChallengeWordFromURL() {
 }
 
 
+function getChallengeCreatorFromURL() {
+  const params = new URLSearchParams(window.location.search);
+
+  const creator = params.get("from");
+
+  if (!creator) {
+    return null;
+  }
+
+  return creator.trim();
+}
+
+
 function removeChallengeFromURL() {
   const url = new URL(window.location.href);
   url.searchParams.delete("c");
+  url.searchParams.delete("from");
   history.replaceState({}, "", url.pathname + url.search + url.hash);
 }
 

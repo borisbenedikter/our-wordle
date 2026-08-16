@@ -31,6 +31,17 @@
 
       <div class="challenge-input-row">
         <input
+          id="challenge-name"
+          type="text"
+          maxlength="30"
+          autocomplete="name"
+          placeholder="Your name"
+          aria-label="Your name"
+        />
+      </div>
+
+      <div class="challenge-input-row">
+        <input
           id="challenge-word"
           type="text"
           maxlength="5"
@@ -39,6 +50,7 @@
           placeholder="PLANT"
           aria-label="Secret challenge word"
         />
+        
         <button id="generate-link-button" class="primary-button">
           Generate Link
         </button>
