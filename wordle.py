@@ -64,12 +64,75 @@ def get_symbol(letter, color):
     return f"{symbols[color]}{letter.upper()}"
 
 
-def display_board(guesses, results):
+def update_keyboard(keyboard_status, guess, result):
     """
-    Draw the complete 6 x 5 Wordle board.
+    Update the status of letters on the on-screen keyboard.
 
-    Previous guesses are displayed with their colors.
-    Unused rows are displayed as empty tiles.
+    A letter's status can only improve:
+
+        unused -> gray -> yellow -> green
+
+    For example, once a letter has been identified as green,
+    a later guess cannot downgrade it to yellow or gray.
+    """
+
+    priority = {
+        None: 0,
+        "gray": 1,
+        "yellow": 2,
+        "green": 3
+    }
+
+    for letter, color in zip(guess, result):
+
+        current_color = keyboard_status.get(letter)
+
+        if priority[color] > priority[current_color]:
+            keyboard_status[letter] = color
+
+
+def display_keyboard(keyboard_status):
+    """
+    Display a QWERTY keyboard underneath the board.
+    """
+
+    keyboard_rows = [
+        "qwertyuiop",
+        "asdfghjkl",
+        "zxcvbnm"
+    ]
+
+    print("Keyboard:")
+    print()
+
+    for row_number, row in enumerate(keyboard_rows):
+
+        # Add a little indentation to resemble a real keyboard.
+        if row_number == 1:
+            print(" ", end="")
+        elif row_number == 2:
+            print("   ", end="")
+
+        for letter in row:
+
+            status = keyboard_status.get(letter)
+
+            if status is None:
+                # Letter has not been used yet
+                key = f"▫️{letter.upper()}"
+            else:
+                key = get_symbol(letter, status)
+
+            print(key, end=" ")
+
+        print()
+
+    print()
+
+
+def display_board(guesses, results, keyboard_status):
+    """
+    Draw the complete 6 x 5 Wordle board and keyboard.
     """
 
     print()
@@ -97,6 +160,8 @@ def display_board(guesses, results):
 
     print()
 
+    display_keyboard(keyboard_status)
+
 
 def get_valid_guess():
     """
@@ -104,10 +169,13 @@ def get_valid_guess():
     """
 
     while True:
+
         guess = input("Enter your guess: ").strip().lower()
 
         if len(guess) != WORD_LENGTH:
-            print(f"Your guess must contain exactly {WORD_LENGTH} letters.")
+            print(
+                f"Your guess must contain exactly {WORD_LENGTH} letters."
+            )
             continue
 
         if not guess.isalpha():
@@ -129,9 +197,19 @@ def play_wordle(secret_word):
             f"The secret word must contain exactly {WORD_LENGTH} letters."
         )
 
-    # Store the history of the game
+    # Store game history
     guesses = []
     results = []
+
+    # Store keyboard state.
+    #
+    # Examples:
+    # {
+    #     "a": "green",
+    #     "r": "yellow",
+    #     "x": "gray"
+    # }
+    keyboard_status = {}
 
     print()
     print("==============================")
@@ -146,8 +224,8 @@ def play_wordle(secret_word):
     print("⬛ = letter not in the word")
     print()
 
-    # Show the empty board before the first guess
-    display_board(guesses, results)
+    # Show empty board and keyboard
+    display_board(guesses, results, keyboard_status)
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
 
@@ -157,12 +235,15 @@ def play_wordle(secret_word):
 
         result = evaluate_guess(secret_word, guess)
 
-        # Add this attempt to the game history
+        # Store current attempt
         guesses.append(guess)
         results.append(result)
 
-        # Redraw the complete board
-        display_board(guesses, results)
+        # Update keyboard based on everything learned
+        update_keyboard(keyboard_status, guess, result)
+
+        # Redraw complete board and keyboard
+        display_board(guesses, results, keyboard_status)
 
         if guess == secret_word:
             print(f"🎉 You got it in {attempt} attempt(s)!")
@@ -178,7 +259,6 @@ def play_wordle(secret_word):
 
 if __name__ == "__main__":
 
-    # For now, change the secret word manually.
     secret_word = "plant"
 
     play_wordle(secret_word)
