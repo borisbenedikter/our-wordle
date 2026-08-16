@@ -47,9 +47,12 @@ def evaluate_guess(secret_word, guess):
     return result
 
 
-def display_result(guess, result):
+def get_symbol(letter, color):
     """
-    Display the guess using colored-square emoji.
+    Convert a letter/color combination into a terminal representation.
+
+    Since emoji squares cannot contain letters, we display the colored
+    square followed by the corresponding letter.
     """
 
     symbols = {
@@ -58,9 +61,40 @@ def display_result(guess, result):
         "gray": "⬛"
     }
 
+    return f"{symbols[color]}{letter.upper()}"
+
+
+def display_board(guesses, results):
+    """
+    Draw the complete 6 x 5 Wordle board.
+
+    Previous guesses are displayed with their colors.
+    Unused rows are displayed as empty tiles.
+    """
+
     print()
-    print(" ".join(guess.upper()))
-    print(" ".join(symbols[color] for color in result))
+    print("        WORD GAME")
+    print()
+
+    for row in range(MAX_ATTEMPTS):
+
+        # A completed guess exists for this row
+        if row < len(guesses):
+
+            guess = guesses[row]
+            result = results[row]
+
+            tiles = []
+
+            for i in range(WORD_LENGTH):
+                tiles.append(get_symbol(guess[i], result[i]))
+
+            print("  ".join(tiles))
+
+        # No guess yet: display an empty row
+        else:
+            print("⬜  ⬜  ⬜  ⬜  ⬜")
+
     print()
 
 
@@ -95,6 +129,10 @@ def play_wordle(secret_word):
             f"The secret word must contain exactly {WORD_LENGTH} letters."
         )
 
+    # Store the history of the game
+    guesses = []
+    results = []
+
     print()
     print("==============================")
     print("          WORD GAME")
@@ -108,6 +146,9 @@ def play_wordle(secret_word):
     print("⬛ = letter not in the word")
     print()
 
+    # Show the empty board before the first guess
+    display_board(guesses, results)
+
     for attempt in range(1, MAX_ATTEMPTS + 1):
 
         print(f"Attempt {attempt}/{MAX_ATTEMPTS}")
@@ -116,7 +157,12 @@ def play_wordle(secret_word):
 
         result = evaluate_guess(secret_word, guess)
 
-        display_result(guess, result)
+        # Add this attempt to the game history
+        guesses.append(guess)
+        results.append(result)
+
+        # Redraw the complete board
+        display_board(guesses, results)
 
         if guess == secret_word:
             print(f"🎉 You got it in {attempt} attempt(s)!")
@@ -132,7 +178,7 @@ def play_wordle(secret_word):
 
 if __name__ == "__main__":
 
-    # For now, simply change this word manually.
-    secret_word = "cigar"
+    # For now, change the secret word manually.
+    secret_word = "plant"
 
     play_wordle(secret_word)
