@@ -12,6 +12,8 @@ let currentRow = 0;
 let currentGuess = "";
 let gameOver = false;
 
+let definitions = {};
+
 const keyboardStatus = {};
 
 const board = document.getElementById("board");
@@ -43,6 +45,14 @@ const keyboardRows = [
   ["enter", "z", "x", "c", "v", "b", "n", "m", "backspace"]
 ];
 
+const definitionCard =
+  document.getElementById("definition-card");
+
+const definitionWord =
+  document.getElementById("definition-word");
+
+const definitionContent =
+  document.getElementById("definition-content");
 
 async function loadWordList(filename) {
   const response = await fetch(filename);
@@ -63,10 +73,32 @@ async function loadWordList(filename) {
 }
 
 
+async function loadDefinitions(filename) {
+  const response = await fetch(filename);
+
+  if (!response.ok) {
+    throw new Error(`Could not load ${filename}`);
+  }
+
+  return await response.json();
+}
+
+
 async function initializeGame() {
   try {
     const allowed = await loadWordList("allowed_guesses.txt");
     const answers = await loadWordList("possible_answers.txt");
+
+    try {
+      definitions = await loadDefinitions("definitions.json");
+    } catch (error) {
+      console.warn(
+        "Definitions could not be loaded. The game will continue without them.",
+        error
+      );
+
+      definitions = {};
+    }
 
     allowedGuesses = new Set(allowed);
 
@@ -166,6 +198,7 @@ function startGame(word, isChallenge, creator = null) {
   resetKeyboardDisplay();
   clearMessage();
   closeChallengePanel();
+  hideDefinition();
 
   if (challengeMode) {
     subtitle.textContent = creator
@@ -288,6 +321,9 @@ function submitGuess() {
         ? "Amazing! You got it on the first try!"
         : `You got it in ${currentRow + 1} tries!`
     );
+
+    showDefinition(secretWord);
+
     return;
   }
 
@@ -296,6 +332,7 @@ function submitGuess() {
   if (currentRow === MAX_ATTEMPTS) {
     gameOver = true;
     showMessage(`The word was ${secretWord.toUpperCase()}.`);
+    showDefinition(secretWord);
     return;
   }
 
@@ -533,6 +570,65 @@ async function copyChallengeLink() {
     document.execCommand("copy");
     copyStatus.textContent = "Copied!";
   }
+}
+
+function showDefinition(word) {
+  const entries = definitions[word];
+
+  definitionWord.textContent = word.toUpperCase();
+  definitionContent.innerHTML = "";
+
+  if (!entries || entries.length === 0) {
+    const unavailable = document.createElement("div");
+
+    unavailable.classList.add("definition-unavailable");
+    unavailable.textContent = "Definition unavailable.";
+
+    definitionContent.appendChild(unavailable);
+    definitionCard.classList.remove("hidden");
+
+    return;
+  }
+
+  entries.forEach((entry, index) => {
+    const sense = document.createElement("div");
+    sense.classList.add("definition-sense");
+
+    const pos = document.createElement("div");
+    pos.classList.add("definition-pos");
+
+    const number =
+      entries.length > 1 ? `${index + 1}. ` : "";
+
+    pos.textContent =
+      `${number}${entry.partOfSpeech || ""}`;
+
+    const definition = document.createElement("div");
+    definition.classList.add("definition-text");
+    definition.textContent = entry.definition;
+
+    sense.appendChild(pos);
+    sense.appendChild(definition);
+
+    if (entry.example) {
+      const example = document.createElement("div");
+      example.classList.add("definition-example");
+      example.textContent = `“${entry.example}”`;
+
+      sense.appendChild(example);
+    }
+
+    definitionContent.appendChild(sense);
+  });
+
+  definitionCard.classList.remove("hidden");
+}
+
+
+function hideDefinition() {
+  definitionCard.classList.add("hidden");
+  definitionWord.textContent = "";
+  definitionContent.innerHTML = "";
 }
 
 
