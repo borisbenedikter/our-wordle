@@ -24,10 +24,13 @@ Install dependency if needed:
 Notes:
 - WordNet data is downloaded automatically if it is not installed.
 - Internet access is needed only for words that WordNet cannot define.
+- At most MAX_DEFINITIONS_PER_POS definitions are stored for each
+  part of speech (noun, verb, adjective, adverb, etc.).
 """
 
 import json
 import time
+from collections import defaultdict
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -42,8 +45,8 @@ OUTPUT_FILE = Path("definitions.json")
 
 WORD_LENGTH = 5
 
-# Maximum number of distinct senses stored for each word.
-MAX_DEFINITIONS_PER_WORD = 3
+# Maximum number of distinct senses stored PER part of speech.
+MAX_DEFINITIONS_PER_POS = 2
 
 # Fallback API behavior.
 API_TIMEOUT_SECONDS = 5
@@ -98,12 +101,19 @@ def load_words(filename):
     return sorted(words)
 
 
+def can_add_definition(counts_by_pos, part_of_speech):
+    """Return True if this part of speech has not reached its limit."""
+    return counts_by_pos[part_of_speech] < MAX_DEFINITIONS_PER_POS
+
+
 def get_wordnet_definitions(word):
     """
-    Return up to MAX_DEFINITIONS_PER_WORD distinct WordNet senses.
+    Return distinct WordNet senses, with at most
+    MAX_DEFINITIONS_PER_POS senses for each part of speech.
     """
     entries = []
     seen_definitions = set()
+    counts_by_pos = defaultdict(int)
 
     for synset in wn.synsets(word):
         definition = synset.definition().strip()
@@ -116,10 +126,21 @@ def get_wordnet_definitions(word):
         if normalized in seen_definitions:
             continue
 
+        part_of_speech = POS_NAMES.get(
+            synset.pos(),
+            synset.pos(),
+        )
+
+        if not can_add_definition(
+            counts_by_pos,
+            part_of_speech,
+        ):
+            continue
+
         seen_definitions.add(normalized)
 
         entry = {
-            "partOfSpeech": POS_NAMES.get(synset.pos(), synset.pos()),
+            "partOfSpeech": part_of_speech,
             "definition": definition,
             "source": "wordnet",
         }
@@ -130,9 +151,7 @@ def get_wordnet_definitions(word):
             entry["example"] = examples[0]
 
         entries.append(entry)
-
-        if len(entries) >= MAX_DEFINITIONS_PER_WORD:
-            break
+        counts_by_pos[part_of_speech] += 1
 
     return entries
 
@@ -164,7 +183,8 @@ def get_datamuse_definitions(word):
     """
     Query Datamuse for dictionary definitions.
 
-    Returns up to MAX_DEFINITIONS_PER_WORD distinct senses.
+    Returns distinct senses, with at most MAX_DEFINITIONS_PER_POS
+    senses for each part of speech.
     Returns [] if no usable definition is found.
     """
     params = urlencode({
@@ -223,7 +243,6 @@ def get_datamuse_definitions(word):
     if not isinstance(data, list) or not data:
         return []
 
-    # We asked for an exact spelling match. Prefer the exact returned word.
     exact_matches = [
         item
         for item in data
@@ -234,6 +253,7 @@ def get_datamuse_definitions(word):
 
     entries = []
     seen_definitions = set()
+    counts_by_pos = defaultdict(int)
 
     for item in candidates:
         for raw_definition in item.get("defs", []):
@@ -249,6 +269,12 @@ def get_datamuse_definitions(word):
             if normalized in seen_definitions:
                 continue
 
+            if not can_add_definition(
+                counts_by_pos,
+                part_of_speech,
+            ):
+                continue
+
             seen_definitions.add(normalized)
 
             entries.append({
@@ -257,8 +283,7 @@ def get_datamuse_definitions(word):
                 "source": "datamuse",
             })
 
-            if len(entries) >= MAX_DEFINITIONS_PER_WORD:
-                return entries
+            counts_by_pos[part_of_speech] += 1
 
     return entries
 
@@ -347,6 +372,7 @@ def main():
     print()
     print("=" * 50)
     print(f"Created '{OUTPUT_FILE}' with {len(definitions)} words.")
+    print(f"Maximum definitions per part of speech: {MAX_DEFINITIONS_PER_POS}")
     print(f"Defined by WordNet:        {wordnet_count}")
     print(f"Defined by Datamuse:       {datamuse_count}")
     print(f"Still without definition:  {len(still_missing)}")
