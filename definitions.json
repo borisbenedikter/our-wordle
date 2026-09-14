@@ -1305,7 +1305,13 @@
       "source": "wordnet"
     }
   ],
-  "among": [],
+  "among": [
+    {
+      "partOfSpeech": "preposition",
+      "definition": "in the midst of",
+      "source": "manual"
+    }
+  ],
   "amour": [
     {
       "partOfSpeech": "noun",
@@ -46079,7 +46085,13 @@
       "source": "wordnet"
     }
   ],
-  "whose": [],
+  "whose": [
+    {
+      "partOfSpeech": "pronoun",
+      "definition": "of or belonging to a person previously mentioned or easily identified",
+      "source": "manual"
+    }
+  ],
   "widen": [
     {
       "partOfSpeech": "verb",
